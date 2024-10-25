@@ -1,0 +1,64 @@
+const mineflayer = require('mineflayer');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+const { GoalNear } = goals;
+const express = require('express');
+
+const bot = mineflayer.createBot({
+  host: '__TheBOYSS__.aternos.me',
+  port: 20613,
+  username: 'BOT',
+  version: '1.21.1',
+});
+
+let serverOnline = false;
+
+bot.loadPlugin(pathfinder);
+
+bot.on('spawn', () => {
+  console.log('Bot has spawned in the server');
+  const movements = new Movements(bot, require('minecraft-data')(bot.version));
+  bot.pathfinder.setMovements(movements);
+
+  function randomDirection() {
+    const x = bot.entity.position.x + Math.floor(Math.random() * 20) - 10;
+    const z = bot.entity.position.z + Math.floor(Math.random() * 20) - 10;
+    bot.pathfinder.setGoal(new goals.GoalBlock(x, bot.entity.position.y, z));
+  }
+
+  bot.pathfinder.setGoal(new GoalNear(0, 0, 0));
+  setInterval(() => {
+    bot.look(Math.random() * 180 - 90, 0);
+  }, 5000);
+
+  setInterval(randomDirection, 2000);
+
+  setInterval(() => {
+    if (Math.random() > 0.8) {
+      bot.setControlState('jump', true);
+      setTimeout(() => bot.setControlState('jump', false), 500);
+    }
+  }, 5000);
+});
+
+bot.on('kicked', (reason) => {
+  console.log(`I got kicked for ${reason}. Reconnecting...`);
+  setTimeout(() => bot.quit(), 5000);
+});
+
+bot.on('end', () => {
+  console.log('Disconnected from server. Reconnecting...');
+  setTimeout(() => bot.quit(), 5000);
+});
+
+bot.on('error', (err) => {
+  console.error('Error:', err);
+});
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => {
+  res.send('Bot is running.');
+});
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
